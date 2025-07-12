@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>価値観ランキングアプリ</title>
+    <style>
+        body {
+            font-family: 'Hiragino Sans', 'Meiryo', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            width: 100%;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 16px;
+        }
+
+        .values-container {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .column {
+            flex: 1;
+        }
+
+        .column-title {
+            font-weight: bold;
+            color: #444;
+            margin-bottom: 15px;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .values-list {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 300px;
+            border: 2px dashed #ddd;
+        }
+
+        .value-item {
+            background-color: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            cursor: move;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .value-item:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .value-item.dragging {
+            opacity: 0.5;
+            transform: rotate(5deg);
+        }
+
+        .value-icon {
+            font-size: 24px;
+            margin-right: 15px;
+        }
+
+        .value-text {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .rank-number {
+            width: 30px;
+            height: 30px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            font-size: 14px;
+        }
+
+        .ranked-list .value-item {
+            background-color: #f0f8ff;
+            border-color: #007bff;
+        }
+
+        .actions {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reset-btn {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        .reset-btn:hover {
+            background-color: #5a6268;
+        }
+
+        .result-btn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .result-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .result-section {
+            margin-top: 40px;
+            padding: 30px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .result-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .result-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .result-item:last-child {
+            border-bottom: none;
+        }
+
+        .drag-over {
+            background-color: #e3f2fd;
+            border-color: #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>価値観ランキングアプリ</h1>
+        <p class="subtitle">あなたにとって大切な価値観を順位付けしてみましょう</p>
+
+        <div style="text-align: center; margin: 20px 0;">
+            <input type="text" id="name-input" placeholder="お名前を入力してください" style="padding: 10px 20px; font-size: 16px; border: 2px solid #ddd; border-radius: 6px; width: 300px;">
+            <button onclick="saveData()" style="padding: 10px 30px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-left: 10px;">保存</button>
+        </div>
+
+        <div id="saved-data" style="margin: 20px 0; padding: 20px; background-color: #e8f5e9; border-radius: 8px; display: none;">
+            <h3 style="color: #2e7d32; margin-bottom: 10px;">保存されたデータ</h3>
+            <div id="saved-list"></div>
+        </div>
+
+        <h2 style="color: #333; margin: 30px 0 20px; font-size: 22px;">セット1: 人生の価値観</h2>
+        <div class="values-container">
+            <div class="column">
+                <div class="column-title">価値観リスト</div>
+                <div class="values-list" id="unranked-list">
+                    <div class="value-item" draggable="true" data-value="承認">
+                        <span class="value-icon">👏</span>
+                        <span class="value-text">承認</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="名誉">
+                        <span class="value-icon">🏆</span>
+                        <span class="value-text">名誉</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="成長">
+                        <span class="value-icon">📈</span>
+                        <span class="value-text">成長</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="信頼">
+                        <span class="value-icon">🤝</span>
+                        <span class="value-text">信頼</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="達成">
+                        <span class="value-icon">🎯</span>
+                        <span class="value-text">達成</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="金銭">
+                        <span class="value-icon">💰</span>
+                        <span class="value-text">金銭</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="自由">
+                        <span class="value-icon">🦅</span>
+                        <span class="value-text">自由</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="安全">
+                        <span class="value-icon">🛡️</span>
+                        <span class="value-text">安全</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="貢献">
+                        <span class="value-icon">🤲</span>
+                        <span class="value-text">貢献</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="家族">
+                        <span class="value-icon">👨‍👩‍👧‍👦</span>
+                        <span class="value-text">家族</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="責任">
+                        <span class="value-icon">⚖️</span>
+                        <span class="value-text">責任</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="column-title">順位付けエリア</div>
+                <div class="values-list ranked-list" id="ranked-list">
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="reset-btn" onclick="resetRanking()">リセット</button>
+            <button class="result-btn" onclick="showResult()">結果を表示</button>
+        </div>
+
+        <div class="result-section" id="result-section">
+            <h2>あなたの価値観ランキング</h2>
+            <ol class="result-list" id="result-list"></ol>
+        </div>
+
+        <h2 style="color: #333; margin: 40px 0 20px; font-size: 22px;">セット2: 人間の基本的欲求</h2>
+        <div class="values-container">
+            <div class="column">
+                <div class="column-title">基本的欲求リスト</div>
+                <div class="values-list" id="unranked-list-2">
+                    <div class="value-item" draggable="true" data-value="愛されたい">
+                        <span class="value-icon">❤️</span>
+                        <span class="value-text">愛されたい</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="認められたい">
+                        <span class="value-icon">👍</span>
+                        <span class="value-text">認められたい</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="精神的・経済的安心感">
+                        <span class="value-icon">🏠</span>
+                        <span class="value-text">精神的・経済的安心感</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="財産を作り増やしたい">
+                        <span class="value-icon">💵</span>
+                        <span class="value-text">財産を作り増やしたい</span>
+                    </div>
+                    <div class="value-item" draggable="true" data-value="夢・新しい経験">
+                        <span class="value-icon">🌟</span>
+                        <span class="value-text">夢・新しい経験</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="column">
+                <div class="column-title">順位付けエリア</div>
+                <div class="values-list ranked-list" id="ranked-list-2">
+                </div>
+            </div>
+        </div>
+
+        <div class="actions" style="margin-top: 40px;">
+            <button class="reset-btn" onclick="resetRanking2()">セット2をリセット</button>
+            <button class="result-btn" onclick="showResult2()">セット2の結果を表示</button>
+        </div>
+
+        <div class="result-section" id="result-section-2" style="background-color: #fff3e0;">
+            <h2>人間の基本的欲求ランキング</h2>
+            <ol class="result-list" id="result-list-2"></ol>
+        </div>
+    </div>
+
+    <script>
+        let draggedElement = null;
+
+        // ドラッグ開始
+        document.addEventListener('dragstart', function(e) {
+            if (e.target.classList.contains('value-item')) {
+                draggedElement = e.target;
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/html', e.target.innerHTML);
+            }
+        });
+
+        // ドラッグ終了
+        document.addEventListener('dragend', function(e) {
+            if (e.target.classList.contains('value-item')) {
+                e.target.classList.remove('dragging');
+            }
+        });
+
+        // ドラッグオーバー
+        document.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            const list = e.target.closest('.values-list');
+            if (list) {
+                e.dataTransfer.dropEffect = 'move';
+                list.classList.add('drag-over');
+            }
+        });
+
+        // ドラッグリーブ
+        document.addEventListener('dragleave', function(e) {
+            const list = e.target.closest('.values-list');
+            if (list && !list.contains(e.relatedTarget)) {
+                list.classList.remove('drag-over');
+            }
+        });
+
+        // ドロップ
+        document.addEventListener('drop', function(e) {
+            e.preventDefault();
+            const list = e.target.closest('.values-list');
+            if (list && draggedElement) {
+                list.classList.remove('drag-over');
+                
+                // ドロップ位置を計算
+                const afterElement = getDragAfterElement(list, e.clientY);
+                if (afterElement == null) {
+                    list.appendChild(draggedElement);
+                } else {
+                    list.insertBefore(draggedElement, afterElement);
+                }
+                
+                updateRankNumbers();
+            }
+        });
+
+        // ドロップ位置を計算する関数
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.value-item:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // 順位番号を更新
+        function updateRankNumbers() {
+            // セット1の順位番号を更新
+            const rankedItems = document.querySelectorAll('#ranked-list .value-item');
+            rankedItems.forEach((item, index) => {
+                // 既存の順位番号を削除
+                const existingRank = item.querySelector('.rank-number');
+                if (existingRank) {
+                    existingRank.remove();
+                }
+                
+                // 新しい順位番号を追加
+                const rankNumber = document.createElement('span');
+                rankNumber.className = 'rank-number';
+                rankNumber.textContent = index + 1;
+                item.insertBefore(rankNumber, item.firstChild);
+            });
+            
+            // セット2の順位番号を更新
+            const rankedItems2 = document.querySelectorAll('#ranked-list-2 .value-item');
+            rankedItems2.forEach((item, index) => {
+                // 既存の順位番号を削除
+                const existingRank = item.querySelector('.rank-number');
+                if (existingRank) {
+                    existingRank.remove();
+                }
+                
+                // 新しい順位番号を追加
+                const rankNumber = document.createElement('span');
+                rankNumber.className = 'rank-number';
+                rankNumber.textContent = index + 1;
+                item.insertBefore(rankNumber, item.firstChild);
+            });
+            
+            // 未ランクリストから順位番号を削除
+            const unrankedItems = document.querySelectorAll('#unranked-list .value-item, #unranked-list-2 .value-item');
+            unrankedItems.forEach(item => {
+                const rankNumber = item.querySelector('.rank-number');
+                if (rankNumber) {
+                    rankNumber.remove();
+                }
+            });
+        }
+
+        // リセット機能
+        function resetRanking() {
+            const unrankedList = document.getElementById('unranked-list');
+            const rankedList = document.getElementById('ranked-list');
+            const resultSection = document.getElementById('result-section');
+            
+            // ランク付けされたアイテムを元のリストに戻す
+            const rankedItems = [...rankedList.children];
+            rankedItems.forEach(item => {
+                const rankNumber = item.querySelector('.rank-number');
+                if (rankNumber) {
+                    rankNumber.remove();
+                }
+                unrankedList.appendChild(item);
+            });
+            
+            // 結果セクションを非表示
+            resultSection.style.display = 'none';
+        }
+
+        // 結果表示機能
+        function showResult() {
+            const rankedList = document.getElementById('ranked-list');
+            const resultList = document.getElementById('result-list');
+            const resultSection = document.getElementById('result-section');
+            
+            if (rankedList.children.length === 0) {
+                alert('価値観を順位付けしてください。');
+                return;
+            }
+            
+            // 結果リストをクリア
+            resultList.innerHTML = '';
+            
+            // ランク付けされたアイテムを結果リストに追加
+            [...rankedList.children].forEach((item, index) => {
+                const value = item.getAttribute('data-value');
+                const icon = item.querySelector('.value-icon').textContent;
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <span class="rank-number">${index + 1}</span>
+                    <span class="value-icon">${icon}</span>
+                    <span class="value-text">${value}</span>
+                `;
+                resultList.appendChild(li);
+            });
+            
+            // 結果セクションを表示
+            resultSection.style.display = 'block';
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // セット2のリセット機能
+        function resetRanking2() {
+            const unrankedList = document.getElementById('unranked-list-2');
+            const rankedList = document.getElementById('ranked-list-2');
+            const resultSection = document.getElementById('result-section-2');
+            
+            // ランク付けされたアイテムを元のリストに戻す
+            const rankedItems = [...rankedList.children];
+            rankedItems.forEach(item => {
+                const rankNumber = item.querySelector('.rank-number');
+                if (rankNumber) {
+                    rankNumber.remove();
+                }
+                unrankedList.appendChild(item);
+            });
+            
+            // 結果セクションを非表示
+            resultSection.style.display = 'none';
+        }
+
+        // セット2の結果表示機能
+        function showResult2() {
+            const rankedList = document.getElementById('ranked-list-2');
+            const resultList = document.getElementById('result-list-2');
+            const resultSection = document.getElementById('result-section-2');
+            
+            if (rankedList.children.length === 0) {
+                alert('基本的欲求を順位付けしてください。');
+                return;
+            }
+            
+            // 結果リストをクリア
+            resultList.innerHTML = '';
+            
+            // ランク付けされたアイテムを結果リストに追加
+            [...rankedList.children].forEach((item, index) => {
+                const value = item.getAttribute('data-value');
+                const icon = item.querySelector('.value-icon').textContent;
+                const li = document.createElement('li');
+                li.className = 'result-item';
+                li.innerHTML = `
+                    <span class="rank-number">${index + 1}</span>
+                    <span class="value-icon">${icon}</span>
+                    <span class="value-text">${value}</span>
+                `;
+                resultList.appendChild(li);
+            });
+            
+            // 結果セクションを表示
+            resultSection.style.display = 'block';
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // データを保存する機能
+        function saveData() {
+            const name = document.getElementById('name-input').value.trim();
+            if (!name) {
+                alert('お名前を入力してください。');
+                return;
+            }
+
+            // セット1のランキングを取得
+            const rankedList1 = document.getElementById('ranked-list');
+            const ranking1 = Array.from(rankedList1.children).map((item, index) => ({
+                rank: index + 1,
+                value: item.getAttribute('data-value'),
+                icon: item.querySelector('.value-icon').textContent
+            }));
+
+            // セット2のランキングを取得
+            const rankedList2 = document.getElementById('ranked-list-2');
+            const ranking2 = Array.from(rankedList2.children).map((item, index) => ({
+                rank: index + 1,
+                value: item.getAttribute('data-value'),
+                icon: item.querySelector('.value-icon').textContent
+            }));
+
+            // データオブジェクトを作成
+            const data = {
+                name: name,
+                date: new Date().toLocaleString('ja-JP'),
+                set1: ranking1,
+                set2: ranking2
+            };
+
+            // ローカルストレージから既存のデータを取得
+            let savedData = JSON.parse(localStorage.getItem('valuesRanking') || '[]');
+            
+            // 新しいデータを追加
+            savedData.push(data);
+
+            // ローカルストレージに保存
+            localStorage.setItem('valuesRanking', JSON.stringify(savedData));
+
+            // 保存成功メッセージ
+            alert(`${name}さんのランキングを保存しました！`);
+
+            // 保存したデータを表示
+            displaySavedData();
+        }
+
+        // 保存したデータを表示する機能
+        function displaySavedData() {
+            const savedData = JSON.parse(localStorage.getItem('valuesRanking') || '[]');
+            const savedDataDiv = document.getElementById('saved-data');
+            const savedListDiv = document.getElementById('saved-list');
+
+            if (savedData.length === 0) {
+                savedDataDiv.style.display = 'none';
+                return;
+            }
+
+            savedDataDiv.style.display = 'block';
+            savedListDiv.innerHTML = '';
+
+            savedData.forEach((data, index) => {
+                const dataDiv = document.createElement('div');
+                dataDiv.style.cssText = 'margin-bottom: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);';
+                
+                const title = document.createElement('h4');
+                title.style.cssText = 'margin: 0 0 10px 0; color: #333;';
+                title.textContent = `${data.name}さん (${data.date})`;
+                dataDiv.appendChild(title);
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.style.cssText = 'float: right; padding: 5px 15px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;';
+                deleteBtn.textContent = '削除';
+                deleteBtn.onclick = () => deleteData(index);
+                title.appendChild(deleteBtn);
+
+                // セット1の結果
+                if (data.set1 && data.set1.length > 0) {
+                    const set1Title = document.createElement('h5');
+                    set1Title.style.cssText = 'margin: 10px 0 5px 0; color: #666;';
+                    set1Title.textContent = '人生の価値観:';
+                    dataDiv.appendChild(set1Title);
+
+                    const set1List = document.createElement('div');
+                    set1List.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
+                    data.set1.forEach(item => {
+                        const itemSpan = document.createElement('span');
+                        itemSpan.style.cssText = 'padding: 5px 10px; background-color: #f0f8ff; border-radius: 20px; font-size: 14px;';
+                        itemSpan.textContent = `${item.rank}. ${item.icon} ${item.value}`;
+                        set1List.appendChild(itemSpan);
+                    });
+                    dataDiv.appendChild(set1List);
+                }
+
+                // セット2の結果
+                if (data.set2 && data.set2.length > 0) {
+                    const set2Title = document.createElement('h5');
+                    set2Title.style.cssText = 'margin: 10px 0 5px 0; color: #666;';
+                    set2Title.textContent = '人間の基本的欲求:';
+                    dataDiv.appendChild(set2Title);
+
+                    const set2List = document.createElement('div');
+                    set2List.style.cssText = 'display: flex; flex-wrap: wrap; gap: 10px;';
+                    data.set2.forEach(item => {
+                        const itemSpan = document.createElement('span');
+                        itemSpan.style.cssText = 'padding: 5px 10px; background-color: #fff3e0; border-radius: 20px; font-size: 14px;';
+                        itemSpan.textContent = `${item.rank}. ${item.icon} ${item.value}`;
+                        set2List.appendChild(itemSpan);
+                    });
+                    dataDiv.appendChild(set2List);
+                }
+
+                savedListDiv.appendChild(dataDiv);
+            });
+        }
+
+        // データを削除する機能
+        function deleteData(index) {
+            if (confirm('このデータを削除してもよろしいですか？')) {
+                let savedData = JSON.parse(localStorage.getItem('valuesRanking') || '[]');
+                savedData.splice(index, 1);
+                localStorage.setItem('valuesRanking', JSON.stringify(savedData));
+                displaySavedData();
+            }
+        }
+
+        // ページ読み込み時に保存したデータを表示
+        window.addEventListener('load', function() {
+            displaySavedData();
+        });
+    </script>
+</body>
+</html>
